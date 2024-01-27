@@ -5,6 +5,7 @@ import os
 import hmac
 import time
 import getpass  # Added for secure password input
+
 # from Crypto.Cipher import AES
 from Crypto.Protocol.KDF import PBKDF2
 from Crypto.Random import get_random_bytes
@@ -17,6 +18,7 @@ AES_BLOCK_SIZE = 16
 AES_KEY_LENGTH = 32
 SALT_LENGTH = 16
 
+
 def selectMode(mode: str) -> None:
     if mode.lower() == "encode":
         encodeMode()
@@ -25,39 +27,56 @@ def selectMode(mode: str) -> None:
     else:
         print("Invalid mode. Please choose 'encode' or 'decode'.")
 
+
 def downloadEncodedTxtFile(encodedMessage: str) -> None:
     with open("encoded_message.txt", "w") as file:
         file.write(encodedMessage)
     print("Encoded message saved to encoded_message.txt")
 
+
 def zwcAlgorithm(data: str) -> str:
-    return ''.join([chr(8203 + int(bit)) for bit in data])
+    return "".join([chr(8203 + int(bit)) for bit in data])
+
 
 def zwcReverse(data: str) -> str:
-    return ''.join(['1' if ord(char) - 8203 == 1 else '0' for char in data])
+    return "".join(["1" if ord(char) - 8203 == 1 else "0" for char in data])
+
 
 def textToBinary(plainText: str) -> str:
-    binaryText = ''.join(format(ord(char), '08b') for char in plainText)
+    binaryText = "".join(format(ord(char), "08b") for char in plainText)
     return binaryText
 
+
 def binaryToText(binaryText: str) -> str:
-    text = ''.join([chr(int(binaryText[i:i+8], 2)) for i in range(0, len(binaryText), 8)])
+    text = "".join(
+        [chr(int(binaryText[i : i + 8], 2)) for i in range(0, len(binaryText), 8)]
+    )
     return text
+
 
 def derive_key(secret_key: bytes, salt: bytes) -> bytes:
     # Using PBKDF2 to derive a key
-    kdf = PBKDF2(secret_key, salt, dkLen=32, count=1000000, prf=lambda p, s: hmac.new(p, s, hashlib.sha256).digest())
+    kdf = PBKDF2(
+        secret_key,
+        salt,
+        dkLen=32,
+        count=1000000,
+        prf=lambda p, s: hmac.new(p, s, hashlib.sha256).digest(),
+    )
     return kdf
+
 
 def encrypt(data: bytes, key: bytes) -> bytes:
     cipher = Fernet(base64.urlsafe_b64encode(key))
     encrypted_data = cipher.encrypt(data)
     return encrypted_data
 
+
 def decrypt(data: bytes, key: bytes) -> bytes:
     cipher = Fernet(base64.urlsafe_b64encode(key))
     decrypted_data = cipher.decrypt(data)
     return decrypted_data
+
 
 def encodeText(text: str, hidden_message: str, secret_key: bytes, salt: bytes) -> tuple:
     # Convert plain text and hidden message to binary
@@ -65,7 +84,11 @@ def encodeText(text: str, hidden_message: str, secret_key: bytes, salt: bytes) -
     hidden_binary = textToBinary(hidden_message)
 
     # Combine the binary strings
-    combined_binary = plain_binary[:len(plain_binary)//2] + hidden_binary + plain_binary[len(plain_binary)//2:]
+    combined_binary = (
+        plain_binary[: len(plain_binary) // 2]
+        + hidden_binary
+        + plain_binary[len(plain_binary) // 2 :]
+    )
 
     # Apply Zero-Width Characters algorithm
     combined_zwc = zwcAlgorithm(combined_binary)
@@ -77,6 +100,7 @@ def encodeText(text: str, hidden_message: str, secret_key: bytes, salt: bytes) -
     encoded_message = base64.b64encode(encrypted_result).decode()
 
     return encoded_message, salt.hex(), secret_key.hex()
+
 
 def encodeMode() -> None:
     # Get input from the user
@@ -97,7 +121,9 @@ def encodeMode() -> None:
     secret_key = derive_key(hidden_pass.encode(), salt)
 
     # Encode the message
-    encoded_message, salt_hex, key_hex = encodeText(text, hidden_message, secret_key, salt)
+    encoded_message, salt_hex, key_hex = encodeText(
+        text, hidden_message, secret_key, salt
+    )
 
     print("\nDone!\n")
     downloadEncodedTxtFile(encoded_message)
@@ -105,9 +131,28 @@ def encodeMode() -> None:
     print("Salt:", salt_hex)
     print("Encryption key:", key_hex)
 
-def decodeText(encoded_message: str, secret_key: bytes, salt: bytes, decryption_password: str) -> str:
+
+# def splitVisibleBinaryAndZWC(text):
+#     # Find the first occurrence of a zero-width character
+#     zwc_index = text.find(chr(8203))
+
+#     if zwc_index != -1:
+#         # If a zero-width character is found, split the text
+#         visible_binary = text[: zwc_index // 2]
+#         zero_width_chars = text[zwc_index // 2 :]
+#     else:
+#         # If no zero-width character is found, assume the entire text is visible binary
+#         visible_binary = text
+#         zero_width_chars = ""
+
+#     return visible_binary, zero_width_chars
+
+
+def decodeText(
+    encoded_message: str, secret_key: bytes, salt: bytes, decryption_password: str
+) -> str:
     # Derive the key using the decryption password and salt
-    key = derive_key(decryption_password.encode('utf-8'), salt)
+    key = derive_key(decryption_password.encode("utf-8"), salt)
 
     # Decode the message
     try:
@@ -116,8 +161,12 @@ def decodeText(encoded_message: str, secret_key: bytes, salt: bytes, decryption_
         print(f"\nError during decoding: {e}")
         return ""
 
+    # visible_binary, zero_width_chars = splitVisibleBinaryAndZWC(decrypted_result)
+    # print("Just in decodeText")
+    # print("Visible: ", visible_binary)
+    # print("Zero-array", zero_width_chars)
     # Reverse Zero-Width Characters
-    decrypted_result = zwcReverse(decrypted_result.decode(errors='replace'))
+    decrypted_result = zwcReverse(decrypted_result.decode(errors="replace"))
 
     # Convert binary to plain text
     try:
@@ -128,34 +177,44 @@ def decodeText(encoded_message: str, secret_key: bytes, salt: bytes, decryption_
 
     return plain_text
 
+
 def decodeMode():
-    encoded_file = input("Enter the name of the encoded message file (e.g., encoded_message.txt): ")
+    encoded_file = input(
+        "Enter the name of the encoded message file (e.g., encoded_message.txt): "
+    )
 
     try:
         # Read the entire content of the file
         with open(encoded_file, "r") as file:
-            file_content = file.read()
+            encoded_text = file.read()
+
+        key_hex = input("Enter your key: ")
+        salt = input("Enter you salt: ")
 
         # Split the content into lines
-        lines = file_content.splitlines()
+        # lines = file_content.splitlines()
 
         # Check if there are enough lines
-        if len(lines) < 2:
-            raise ValueError("Not enough values in the encoded message file.")
+        # if len(lines) < 2:
+        #     raise ValueError("Not enough values in the encoded message file.")
 
-        encoded_text, key_hex = lines[:2]
+        # encoded_text, key_hex = lines[:2]
 
         # Allow the user 2 seconds to press Alt+Enter to enter the hidden password
-        print("\nWaits for 2 seconds: User presses Alt+Enter once to enter the hidden password\n")
+        print(
+            "\nWaits for 2 seconds: User presses Alt+Enter once to enter the hidden password\n"
+        )
         time.sleep(2)
         hidden_pass = getpass.getpass("Enter the hidden pass: ")
 
         # Decode the hexadecimal representation of the key
         key = bytes.fromhex(key_hex)
+        salt = bytes.fromhex(salt)
 
         # Decoding logic
         try:
-            decrypted_text = decodeText(encoded_text, key, None, hidden_pass)
+            # replaced none with salt
+            decrypted_text = decodeText(encoded_text, key, salt, hidden_pass)
 
             # Display plain text
             print("\nHere you go!")
@@ -166,11 +225,13 @@ def decodeMode():
     except Exception as e:
         print(f"\nError reading encoded message file: {e}")
 
+
 # Function to extract hidden text
 def extractHiddenText(data: str) -> str:
     hidden_binary = data[64:-64]
     hidden_text = binaryToText(hidden_binary)
     return hidden_text
+
 
 # Main program
 if __name__ == "__main__":
