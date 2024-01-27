@@ -4,12 +4,13 @@ import hashlib
 import os
 import hmac
 import time
-from Crypto.Cipher import AES
+import getpass  # Added for secure password input
+# from Crypto.Cipher import AES
 from Crypto.Protocol.KDF import PBKDF2
 from Crypto.Random import get_random_bytes
 from Crypto.Util.Padding import pad, unpad
 from cryptography.fernet import Fernet
-
+import getpass
 
 # Constants
 AES_BLOCK_SIZE = 16
@@ -30,11 +31,9 @@ def downloadEncodedTxtFile(encodedMessage: str) -> None:
     print("Encoded message saved to encoded_message.txt")
 
 def zwcAlgorithm(data: str) -> str:
-    # Implement the Zero-Width Characters algorithm
     return ''.join([chr(8203 + int(bit)) for bit in data])
 
 def zwcReverse(data: str) -> str:
-    # Implement the reverse of Zero-Width Characters algorithm
     return ''.join(['1' if ord(char) - 8203 == 1 else '0' for char in data])
 
 def textToBinary(plainText: str) -> str:
@@ -46,7 +45,7 @@ def binaryToText(binaryText: str) -> str:
     return text
 
 def derive_key(secret_key: bytes, salt: bytes) -> bytes:
-    # Use PBKDF2 to derive a key
+    # Using PBKDF2 to derive a key
     kdf = PBKDF2(secret_key, salt, dkLen=32, count=1000000, prf=lambda p, s: hmac.new(p, s, hashlib.sha256).digest())
     return kdf
 
@@ -74,13 +73,10 @@ def encodeText(text: str, hidden_message: str, secret_key: bytes, salt: bytes) -
     # Encrypt using Fernet symmetric encryption
     encrypted_result = encrypt(combined_zwc.encode(), secret_key)
 
-    # Compress the result
-    compressed_result = zlib.compress(encrypted_result)
-
     # Convert the result to base64 for easy sharing
-    encoded_message = base64.b64encode(compressed_result).decode()
+    encoded_message = base64.b64encode(encrypted_result).decode()
 
-    return encoded_message, salt
+    return encoded_message, salt.hex(), secret_key.hex()
 
 def encodeMode() -> None:
     # Get input from the user
@@ -101,70 +97,74 @@ def encodeMode() -> None:
     secret_key = derive_key(hidden_pass.encode(), salt)
 
     # Encode the message
-    encoded_message, salt = encodeText(text, hidden_message, secret_key, salt)
+    encoded_message, salt_hex, key_hex = encodeText(text, hidden_message, secret_key, salt)
 
     print("\nDone!\n")
     downloadEncodedTxtFile(encoded_message)
+
+    print("Salt:", salt_hex)
+    print("Encryption key:", key_hex)
 
 def decodeText(encoded_message: str, secret_key: bytes, salt: bytes, decryption_password: str) -> str:
     # Derive the key using the decryption password and salt
     key = derive_key(decryption_password.encode('utf-8'), salt)
 
     # Decode the message
-    decrypted_result = decrypt(base64.b64decode(encoded_message), key)
+    try:
+        decrypted_result = decrypt(base64.b64decode(encoded_message), key)
+    except Exception as e:
+        print(f"\nError during decoding: {e}")
+        return ""
 
     # Reverse Zero-Width Characters
-    decrypted_result = zwcReverse(decrypted_result.decode())
+    decrypted_result = zwcReverse(decrypted_result.decode(errors='replace'))
 
     # Convert binary to plain text
-    plain_text = binaryToText(decrypted_result)
+    try:
+        plain_text = binaryToText(decrypted_result)
+    except Exception as e:
+        print(f"\nError during text conversion: {e}")
+        return ""
 
     return plain_text
 
 def decodeMode():
-    file_name = input("Enter the name of the encoded message file (e.g., encoded_message.txt): ")
+    encoded_file = input("Enter the name of the encoded message file (e.g., encoded_message.txt): ")
 
     try:
-        with open(file_name, "r") as file:
-            encoded_text = file.read()
-    except FileNotFoundError:
-        print(f"File {file_name} not found.")
-        return
+        # Read the entire content of the file
+        with open(encoded_file, "r") as file:
+            file_content = file.read()
 
-    encryption_key = input("Enter the encryption key: ")
+        # Split the content into lines
+        lines = file_content.splitlines()
 
-    try:
-        # Allow the user 2 seconds to press Enter to enter the hidden password
-        print("\nWaits for 2 seconds: User presses Enter once in order to enter the hidden password\n")
+        # Check if there are enough lines
+        if len(lines) < 2:
+            raise ValueError("Not enough values in the encoded message file.")
+
+        encoded_text, key_hex = lines[:2]
+
+        # Allow the user 2 seconds to press Alt+Enter to enter the hidden password
+        print("\nWaits for 2 seconds: User presses Alt+Enter once to enter the hidden password\n")
         time.sleep(2)
-        print("Enter the hidden pass:")
-        hidden_pass = input()  # Read the input directly
-    except KeyboardInterrupt:
-        print("\nOperation canceled.")
-        return
+        hidden_pass = getpass.getpass("Enter the hidden pass: ")
 
-    # Decoding logic
-    try:
-        # Decryption
-        decrypted = base64.b64decode(encoded_text).decode('utf-8')
-        salted_pass = (hidden_pass + encryption_key).encode('utf-8')
-        hash_obj = hashlib.sha256(salted_pass)
-        salt = hash_obj.hexdigest()[:16]
-        key = hashlib.pbkdf2_hmac('sha256', salted_pass, salt.encode('utf-8'), 100000)
-        iv = key[:16]
-        cipher = AES.new(key, AES.MODE_CBC, iv)
-        decrypted_text = unpad(cipher.decrypt(decrypted.encode('utf-8')), AES.block_size).decode('utf-8')
+        # Decode the hexadecimal representation of the key
+        key = bytes.fromhex(key_hex)
 
-        # Extract hidden text
-        hidden_text = decrypted_text.split("Hidden Text: ")[1]
-        decoded_text = decrypted_text.split("Hidden Text: ")[0]
+        # Decoding logic
+        try:
+            decrypted_text = decodeText(encoded_text, key, None, hidden_pass)
 
-        print("\nHere you go!")
-        print(f"Plain text: {decoded_text}")
-        print(f"Hidden Text: {hidden_text}")
+            # Display plain text
+            print("\nHere you go!")
+            print(f"Plain text: {decrypted_text}")
+        except Exception as e:
+            print(f"\nError during decoding: {e}")
+
     except Exception as e:
-        print(f"\nError during decoding: {e}")
-
+        print(f"\nError reading encoded message file: {e}")
 
 # Function to extract hidden text
 def extractHiddenText(data: str) -> str:
