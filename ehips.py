@@ -4,6 +4,7 @@ import pyperclip
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+import pyfiglet
 
 colorama.init()
 
@@ -118,8 +119,14 @@ def email_steganography():
         print(f"{GREEN}[+]{RESET} Email sent with hidden message. {GREEN}[+]{RESET}")
 
 if __name__ == '__main__':
+        
+    print("")
+    result = pyfiglet.figlet_format("E H I P S", font = "alligator", width = 100)
+    print(result) 
+    print("")
+                            
     while True:
-        command = input("Are you ready?: ")
+        command = input("Are you ready? (Yes/No): ")
         cmd_splitted = command.split(' ', 1)
 
         if cmd_splitted[0] == "Yes":
