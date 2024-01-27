@@ -1,87 +1,153 @@
-import argparse
 import zlib
-from aes_256 import encrypt, decrypt  # Assuming aes_256.py is in the same directory
+import base64
+import hashlib
+import os
+import hmac
+from Crypto.Cipher import AES
+from Crypto.Protocol.KDF import PBKDF2
+from Crypto.Random import get_random_bytes
+from Crypto.Util.Padding import pad, unpad
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad, unpad
+from cryptography.fernet import Fernet
 
-# Functions needed
-# Encode function
-# Decode function
-# Mode function - Function to prompt the user to enter encode or decode mode
-# Save to file function
-
-def encodeText(plainText: str, hiddenText: str) -> str:
-    print("Hidden Text (Visible): ", hiddenText)
-    # Convert the hidden into Binary using its ASCII values
-    hidden = ''.join(format(ord(i), '08b') for i in hiddenText)
-    print("Hidden Text: ", hidden)
-    # Convert binary into ZWC (Zero-Width Characters)
-    zwc_encode = hidden.replace('0', '\u200C').replace('1', '\u200D')
-    print("Zero Width Characters Implemented: ", zwc_encode)
-
-    # Combine plaintext and ZWC-encoded data
-    combined_text = plainText + zwc_encode
-    
-    # Convert the combined text to bytes
-    combined_bytes = combined_text.encode()
-
-    # Generate a random salt for key derivation
-    salt = b'\x9d(\xf5\xc3N{\x13}\xd2\x84\x94\xc1\x91\xd8M6'
-
-    # Encrypt the combined text using AES-256 algorithm
-    encrypted_result = encrypt(combined_bytes, "your_secret_key", salt)
-    print("\nEncrypted result using AES-256: ", encrypted_result)
-    print("\n")
-
-    # Check if the .txt file is larger or smaller than another file containing just plaintext data
-    if len(encrypted_result) != len(combined_bytes):
-        print("Size difference detected. Applying compression algorithm to prevent detection...")
-        compressed_result = zlib.compress(encrypted_result)
-        print("File Compressed!")
-        print(compressed_result)
-        print("\n")
+def selectMode(mode: str) -> None:
+    if mode.lower() == "encode":
+        encodeMode()
+    elif mode.lower() == "decode":
+        decodeMode()
     else:
-        return compressed_result
+        print("Invalid mode. Please choose 'encode' or 'decode'.")
 
+def downloadEncodedTxtFile(encodedMessage: str) -> None:
+    with open("encoded_message.txt", "w") as file:
+        file.write(encodedMessage)
+    print("Encoded message saved to encoded_message.txt")
 
-def decode(receivedEmailText: str, secretKey: str) -> str:
-    # Decompress the data
-    decompressed_data = zlib.decompress(receivedEmailText).decode()
+def zwcAlgorithm(data: str) -> str:
+    # Implement the Zero-Width Characters algorithm
+    return ''.join([chr(8203 + int(bit)) for bit in data])
 
-    # Extract encrypted ZWC data
-    encrypted_zwc = decompressed_data[len(secretKey):]
+def zwcReverse(data: str) -> str:
+    # Implement the reverse of Zero-Width Characters algorithm
+    return ''.join(['1' if ord(char) - 8203 == 1 else '0' for char in data])
 
-    # Generate the same salt used during encoding
-    salt = b'\x9d(\xf5\xc3N{\x13}\xd2\x84\x94\xc1\x91\xd8M6'
+def textToBinary(plainText: str) -> str:
+    binaryText = ''.join(format(ord(char), '08b') for char in plainText)
+    return binaryText
 
-    # Decrypt the ZWC data
-    decrypted_zwc_data = decrypt(encrypted_zwc, "your_secret_key", salt)
+def binaryToText(binaryText: str) -> str:
+    text = ''.join([chr(int(binaryText[i:i+8], 2)) for i in range(0, len(binaryText), 8)])
+    return text
 
-    # Convert the ZWC data back to binary
-    binary_data = decrypted_zwc_data.replace('\u200C', '0').replace('\u200D', '1')
+def encrypt(data: bytes, secret_key: bytes, salt: bytes) -> bytes:
+    # Derive the key
+    key = derive_key(secret_key, salt)
 
-    # Convert binary to plaintext
-    plaintext = ''.join(chr(int(binary_data[i:i + 8], 2)) for i in range(0, len(binary_data), 8))
+    # Create an AES cipher object
+    cipher = AES.new(key, AES.MODE_CBC)
 
-    return plaintext
+    # Encrypt the data
+    cipher_text = cipher.encrypt(pad(data, AES.block_size))
 
+    # Return the IV + cipher text
+    return cipher.iv + cipher_text
 
-def selectMode(mode: str) -> str:
-    # Prompt the user for the mode
-    # If the user wants to go to encode mode
-        # Go to the encode function
-    # Else if user wants to go to decode mode, then direct the user for the decode mode
-    pass
+def derive_key(secret_key: bytes, salt: bytes) -> bytes:
+    # Use PBKDF2 to derive a key
+    kdf = PBKDF2(secret_key, salt, dkLen=32, count=1000000, prf=lambda p, s: hmac.new(p, s, hashlib.sha256).digest())
+    return kdf
 
-def downloadEncodedTxtFile(encodedMessage: str):
-    # Name is self-explanatory
-    pass
+def encodeText(text: str, hidden_message: str, secret_key: bytes, salt: bytes) -> tuple:
+    # Convert plain text and hidden message to binary
+    plain_binary = textToBinary(text)
+    hidden_binary = textToBinary(hidden_message)
 
-# Helper functions needed
-    # 1. ZWC Algorithm function
-    # 2. ZWC Reverse
-    # 3. PlainText to ASCII to Binary
-    # 4. Binary to ASCII to PlainText 
+    # Combine the binary strings
+    combined_binary = plain_binary[:len(plain_binary)//2] + hidden_binary + plain_binary[len(plain_binary)//2:]
 
+    # Apply Zero-Width Characters algorithm
+    combined_zwc = zwcAlgorithm(combined_binary)
+
+    # Encrypt using AES-256
+    encrypted_result = encrypt(combined_zwc.encode(), secret_key, salt)
+
+    # Compress the result
+    compressed_result = zlib.compress(encrypted_result)
+
+    # Convert the result to base64 for easy sharing
+    encoded_message = base64.b64encode(compressed_result).decode()
+
+    return encoded_message, salt
+
+def decodeText(encodedMessage: str, secret_key: bytes, salt: bytes) -> str:
+    # Decode base64
+    compressed_result = base64.b64decode(encodedMessage)
+
+    # Decompress the result
+    encrypted_result = zlib.decompress(compressed_result)
+
+    # Decrypt using AES-256
+    decrypted_data = decrypt(encrypted_result, secret_key, salt)
+
+    # Reverse Zero-Width Characters
+    decrypted_data = zwcReverse(decrypted_data.decode())
+
+    # Convert binary to plain text
+    plain_text = binaryToText(decrypted_data)
+
+    return plain_text
+
+def decrypt(data: bytes, secret_key: bytes, salt: bytes) -> bytes:
+    # Derive the key
+    key = derive_key(secret_key, salt)
+
+    # Extract the IV from the data
+    iv = data[:AES.block_size]
+
+    # Create an AES cipher object
+    cipher = AES.new(key, AES.MODE_CBC, iv=iv)
+
+    # Decrypt the data
+    decrypted_data = unpad(cipher.decrypt(data[AES.block_size:]), AES.block_size)
+
+    return decrypted_data
+def encodeMode() -> None:
+    # Get input from the user
+    text = input("Enter the text: ")
+    hidden_message = input("Enter the hidden message: ")
+    
+    # Generate a random secret key
+    secret_key = get_random_bytes(32)  # You can adjust the key size as needed
+    
+    salt = os.urandom(16)  # Generate a random salt
+
+    # Encode the message
+    encoded_message, salt = encodeText(text, hidden_message, secret_key, salt)
+
+    print("\nEncoded Message:", encoded_message)
+    print("Encryption Key:", base64.b64encode(secret_key).decode())
+    print("Salt:", base64.b64encode(salt).decode())
+
+    downloadEncodedTxtFile(encoded_message)
+
+def decodeMode() -> None:
+    # Get input from the user
+    encoded_message = input("Enter the encoded message: ")
+    secret_key = input("Enter the encryption key: ")
+    salt = input("Enter the salt: ")
+
+    # Convert string inputs to bytes
+    secret_key = base64.b64decode(secret_key)
+    salt = base64.b64decode(salt)
+
+    # Decode the message
+    decoded_text = decodeText(encoded_message, secret_key, salt)
+
+    print("Decoded Text:", decoded_text)
+
+# Main program
 if __name__ == "__main__":
-     str1 = "My name is Jainam Kashyap"
-     str2 = "My google account password is JohnDoe123"
-     (encodeText(str1, str2))
+    # Get the mode from the user
+    mode = input("Enter mode (encode/decode): ")
+    selectMode(mode)
