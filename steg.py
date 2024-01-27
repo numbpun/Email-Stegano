@@ -64,14 +64,12 @@ def encodeText(text: str, hidden_message: str, secret_key: bytes, salt: bytes) -
     plain_binary = textToBinary(text)
     hidden_binary = textToBinary(hidden_message)
 
-    # Combine the binary strings
-    combined_binary = plain_binary[:len(plain_binary)//2] + hidden_binary + plain_binary[len(plain_binary)//2:]
-
     # Apply Zero-Width Characters algorithm
-    combined_zwc = zwcAlgorithm(combined_binary)
+    zwc_encoding = zwcAlgorithm(hidden_binary)
 
-    # Encrypt using Fernet symmetric encryption
-    encrypted_result = encrypt(combined_zwc.encode(), secret_key)
+    mergeTogether = plain_binary + zwc_encoding
+
+    encrypted_result = encrypt(mergeTogether.encode(), secret_key)
 
     # Convert the result to base64 for easy sharing
     encoded_message = base64.b64encode(encrypted_result).decode()
@@ -133,38 +131,43 @@ def decodeMode():
 
     try:
         # Read the entire content of the file
-        with open(encoded_file, "r") as file:
+        with open(encoded_file, "rb") as file:
             file_content = file.read()
+            key = input("Enter the encryption key: ")
+            salt = input("Throw the salt: ")
+            print("Key and Salt Processing...")
+ 
+            saltHex = bytes.fromhex(salt)
+            key_hex = bytes.fromhex(key)
+            print("Key and Salt Processed... Now decrypting... ")
 
-        # Split the content into lines
-        lines = file_content.splitlines()
+        decrypted_text_bytes = decrypt(file_content, key_hex)
+        print("Decrypted Bytes :",  decrypted_text_bytes)
+        decryptedText = textToBinary(decrypted_text_bytes)
 
-        # Check if there are enough lines
-        if len(lines) < 2:
-            raise ValueError("Not enough values in the encoded message file.")
+        print("\nHere you go!")
+        print(f"Plain text: {decryptedText}")
 
-        encoded_text, key_hex = lines[:2]
-
-        # Allow the user 2 seconds to press Alt+Enter to enter the hidden password
-        print("\nWaits for 2 seconds: User presses Alt+Enter once to enter the hidden password\n")
+        print("Have a nice Day!\n")
         time.sleep(2)
         hidden_pass = getpass.getpass("Enter the hidden pass: ")
 
-        # Decode the hexadecimal representation of the key
-        key = bytes.fromhex(key_hex)
+        # # Decode the hexadecimal representation of the key
+        # key_hex = bytes.fromhex(key)
+        # saltHex = bytes.fromhex(salt)
 
         # Decoding logic
         try:
-            decrypted_text = decodeText(encoded_text, key, None, hidden_pass)
+            decoded_text = decodeText(file_content, key_hex, saltHex, hidden_pass)
 
             # Display plain text
             print("\nHere you go!")
-            print(f"Plain text: {decrypted_text}")
+            print(f"Hidden Message: {decoded_text}")
         except Exception as e:
             print(f"\nError during decoding: {e}")
 
     except Exception as e:
-        print(f"\nError reading encoded message file: {e}")
+        print(f"\nError reading encrypted message file: {e}")
 
 # Function to extract hidden text
 def extractHiddenText(data: str) -> str:
