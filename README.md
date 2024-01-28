@@ -88,10 +88,10 @@ While EHIPS provides an entertaining way to hide messages within emails, it's es
 Contributions are welcome! If you want to contribute to EHIPS, please follow these steps:
 
 Fork the repository.
-Create a new branch (`git checkout -b feature/your-feature`).
-Commit your changes (`git commit -m 'Add your feature'`).
-Push to the branch (`git push origin feature/your-feature`).
-Open a pull request.
+- Create a new branch (`git checkout -b feature/your-feature`).
+- Commit your changes (`git commit -m 'Add your feature'`).
+- Push to the branch (`git push origin feature/your-feature`).
+- Open a pull request.
 
 ## License
 This project is developed by Jainam Kashyap (jk3862@drexel.edu) and (uj29@drexel.edu) for the purposes of education only!
