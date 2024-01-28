@@ -94,12 +94,11 @@ def send_email(sender_email, sender_password, receiver_email, subject, body, att
 
 encoded_message = None
 
-
 def email_steganography():
     global encoded_message  # Use the global keyword to reference the outer variable
 
     print("")
-    print(f"{YELLOW}[{MIDDLE_DOT}]{RESET} Choose ZWC option (1 - Encode / 2 - Decode / 3 - Email): ", end="")
+    print(f"{YELLOW}[{MIDDLE_DOT}]{RESET} Choose ZWC option (1 - Encode / 2 - Decode / 3 - Send Email / 4 - Decode Email): ", end="")
     option = int(input().lower())
     
     if option == 1:
@@ -131,22 +130,22 @@ def email_steganography():
         # Send the email with the attached file
         send_email(sender_email, sender_password, receiver_email, subject, body, attachment_path='encoded_message.txt')
         print(f"{GREEN}[+]{RESET} Email sent with hidden message. {GREEN}[+]{RESET}")
-    else:
-        print(f"{YELLOW}[{MIDDLE_DOT}]{RESET} Enter path to the email text file: ", end="")
-        email_file_path = input()
-        decode_email(email_file_path)
+    elif option == 4:
+        decode_email()  # Updated to use the modified decode_email function
 
 def decode_email():
-    print(f"{YELLOW}[{MIDDLE_DOT}]{RESET} Enter filename containing encoded message: ", end="")
-    filename = input()
-
+    print(f"{YELLOW}[{MIDDLE_DOT}]{RESET} Enter path to the email text file: ", end="")
+    email_file_path = input()
+    
     try:
-        with open(filename, 'r') as file:
+        with open(email_file_path, 'r') as file:
             encoded_message = file.read()
-            decoded_message = decode_text(encoded_message)
-            print(f"{GREEN}[+]{RESET} Decoded Message:  {decoded_message}")
+        print(f"{GREEN}[+]{RESET} Decoded Message:  " + decode_text(encoded_message))
     except FileNotFoundError:
-        print(f"{RED}[!]{RESET} File not found: {filename}")
+        print(f"{RED}[!]{RESET} File not found. Please make sure the file exists in the current directory.")
+    except Exception as e:
+        print(f"{RED}[!]{RESET} An error occurred: {e}")
+
 
 if __name__ == '__main__':
     print("")
