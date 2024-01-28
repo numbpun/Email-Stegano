@@ -84,18 +84,14 @@ While EHIPS provides an entertaining way to hide messages within emails, it's es
 **Note:** Always ensure that the recipient is aware of the hidden content and the usage of EHIPS for decoding. Transparent communication is key to ethical steganography practices.
 
 
-Contribution
+## Contribution
 Contributions are welcome! If you want to contribute to EHIPS, please follow these steps:
 
 Fork the repository.
-Create a new branch (git checkout -b feature/your-feature).
-Commit your changes (git commit -m 'Add your feature').
-Push to the branch (git push origin feature/your-feature).
+Create a new branch (`git checkout -b feature/your-feature`).
+Commit your changes (`git commit -m 'Add your feature'`).
+Push to the branch (`git push origin feature/your-feature`).
 Open a pull request.
-License
-This project is licensed under the MIT License - see the LICENSE file for details.
 
-kotlin
-Copy code
-
-Feel free to use and modify this plaintext version as needed.
+## License
+This project is developed by Jainam Kashyap (jk3862@drexel.edu) and (uj29@drexel.edu) for the purposes of education only!
