@@ -8,8 +8,6 @@ import pyfiglet
 from PIL import Image
 from colorama import Fore, init
 from asciimatics.screen import Screen
-from tabulate import tabulate
-import platform
 
 colorama.init()
 init(autoreset=True)
@@ -17,7 +15,6 @@ init(autoreset=True)
 GREEN = Fore.GREEN
 RESET = Fore.RESET
 YELLOW = Fore.YELLOW
-CYAN = Fore.CYAN 
 RED = Fore.RED
 MIDDLE_DOT = '\u00b7'
 ZERO_WIDTH_SPACE = '\u200b'
@@ -34,21 +31,14 @@ zero_space_symbols = [
     ZERO_WIDTH_JOINER,
 ]
 
-# def clear_screen():
-#     # Clear the screen based on the platform
-#     if platform.system() == 'Windows':
-#         os.system('cls')
-#     else:
-#         os.system('clear')
-
 def to_base(num, b, numerals='0123456789abcdefghijklmnopqrstuvwxyz'):
     return ((num == 0) and numerals[0]) or (to_base(num // b, b, numerals).lstrip(numerals[0]) +
         numerals[num % b])
 
 def encode_text():
-    print(f"{Fore.LIGHTYELLOW_EX}[{MIDDLE_DOT}]{RESET} Enter message to send: ", end="")
+    print(f"{YELLOW}[{MIDDLE_DOT}]{RESET} Enter message to send: ", end="")
     merge = input()
-    print(f"{Fore.LIGHTYELLOW_EX}[{MIDDLE_DOT}]{RESET} Enter hidden: ", end="")
+    print(f"{YELLOW}[{MIDDLE_DOT}]{RESET} Enter hidden: ", end="")
     message = input()
     encoded = LEFT_TO_RIGHT_MARK
     for message_char in message:
@@ -111,33 +101,29 @@ encoded_message = None
 def email_steganography():
     global encoded_message  # Use the global keyword to reference the outer variable
 
-    print(tabulate([[f"{Fore.LIGHTYELLOW_EX}[{MIDDLE_DOT}]{RESET} Choose ZWC option"],
-                    [f"{Fore.LIGHTYELLOW_EX}1 - Encode"],
-                    [f"{Fore.LIGHTYELLOW_EX}2 - Decode"],
-                    [f"{Fore.LIGHTYELLOW_EX}3 - Send Email"],
-                    [f"{Fore.LIGHTYELLOW_EX}4 - Decode Email"]], headers=['Options']))
-    
-    option = int(input())
+    print("")
+    print(f"{YELLOW}[{MIDDLE_DOT}]{RESET} Choose ZWC option (1 - Encode / 2 - Decode / 3 - Send Email / 4 - Decode Email): ", end="")
+    option = int(input().lower())
     
     if option == 1:
         encoded_message, merge = encode_text()
     elif option == 2:
-        print(tabulate([[f"{Fore.LIGHTYELLOW_EX}[{MIDDLE_DOT}]{RESET} Enter message to decode"]], headers=['Options']))
+        print(f"{YELLOW}[{MIDDLE_DOT}]{RESET} Enter message to decode: ", end="")
         message = input()
-        print(f"{GREEN}[+]{RESET} Decoded Message:  {decode_text(message)}")
+        print(f"{GREEN}[+]{RESET} Decoded Message:  " + decode_text(message))
         return
     elif option == 3:
         if encoded_message is None:
-            print(tabulate([[f"{RED}[!]{RESET} Encode a message first before sending an email."]], headers=['Options']))
+            print(f"{RED}[!]{RESET} Encode a message first before sending an email.")
             return
 
-        sender_email = input(tabulate([[f"{Fore.LIGHTYELLOW_EX}[{MIDDLE_DOT}]{RESET} Enter sender's email"]], headers=['Options']))
-        sender_password = input(tabulate([[f"{Fore.LIGHTYELLOW_EX}[{MIDDLE_DOT}]{RESET} Enter sender's password"]], headers=['Options']))
-        receiver_email = input(tabulate([[f"{Fore.LIGHTYELLOW_EX}[{MIDDLE_DOT}]{RESET} Enter receiver's email"]], headers=['Options']))
-        subject = input(tabulate([[f"{Fore.LIGHTYELLOW_EX}[{MIDDLE_DOT}]{RESET} Enter email subject"]], headers=['Options']))
+        sender_email = input(f"{YELLOW}[{MIDDLE_DOT}]{RESET} Enter sender's email: ")
+        sender_password = input(f"{YELLOW}[{MIDDLE_DOT}]{RESET} Enter sender's password: ")
+        receiver_email = input(f"{YELLOW}[{MIDDLE_DOT}]{RESET} Enter receiver's email: ")
+        subject = input(f"{YELLOW}[{MIDDLE_DOT}]{RESET} Enter email subject: ")
         
         # Read email body from an existing text file
-        body_file_path = input(tabulate([[f"{Fore.LIGHTYELLOW_EX}[{MIDDLE_DOT}]{RESET} Enter path to email body text file"]], headers=['Options']))
+        body_file_path = input(f"{YELLOW}[{MIDDLE_DOT}]{RESET} Enter path to email body text file: ")
         with open(body_file_path, 'r') as file:
             body = file.read()
 
@@ -147,92 +133,35 @@ def email_steganography():
 
         # Send the email with the attached file
         send_email(sender_email, sender_password, receiver_email, subject, body, attachment_path='encoded_message.txt')
-        print(tabulate([[f"{GREEN}[+]{RESET} Email sent with hidden message."]], headers=['Options']))
+        print(f"{GREEN}[+]{RESET} Email sent with hidden message. {GREEN}[+]{RESET}")
     elif option == 4:
-        decode_email()
+        decode_email()  # Updated to use the modified decode_email function
 
 def decode_email():
-    print(tabulate([[f"{Fore.LIGHTYELLOW_EX}[{MIDDLE_DOT}]{RESET} Enter path to the email text file"]], headers=['Options']))
+    print(f"{YELLOW}[{MIDDLE_DOT}]{RESET} Enter path to the email text file: ", end="")
     email_file_path = input()
     
     try:
         with open(email_file_path, 'r') as file:
             encoded_message = file.read()
-        print(tabulate([[f"{GREEN}[+]{RESET} Decoded Message:  {decode_text(encoded_message)}"]], headers=['Options']))
+        print(f"{GREEN}[+]{RESET} Decoded Message:  " + decode_text(encoded_message))
     except FileNotFoundError:
-        print(tabulate([[f"{RED}[!]{RESET} File not found. Please make sure the file exists in the current directory."]], headers=['Options']))
+        print(f"{RED}[!]{RESET} File not found. Please make sure the file exists in the current directory.")
     except Exception as e:
-        print(tabulate([[f"{RED}[!]{RESET} An error occurred: {e}"]], headers=['Options']))
-
-
-
-def display_menu():
-    print(tabulate([[f"{Fore.CYAN}[{MIDDLE_DOT}]{RESET} Choose ZWC option"],
-                    [f"{Fore.LIGHTYELLOW_EX}1 - Encode"],
-                    [f"{Fore.LIGHTYELLOW_EX}2 - Decode"],
-                    [f"{Fore.LIGHTYELLOW_EX}3 - Send Email"],
-                    [f"{Fore.LIGHTYELLOW_EX}4 - Decode Email"],
-                    [f"{Fore.LIGHTYELLOW_EX}5 - Quit"]], headers=['Options']))
-    return int(input())
-
-def menu():
-    while True:
-        option = display_menu()
-
-        if option == 1:
-            encoded_message, merge = encode_text()
-        elif option == 2:
-            print(tabulate([[f"{Fore.LIGHTYELLOW_EX}[{MIDDLE_DOT}]{RESET} Enter message to decode"]], headers=['Options']))
-            message = input()
-            print(f"{GREEN}[+]{RESET} Decoded Message:  {decode_text(message)}")
-        elif option == 3:
-            send_email_option()
-        elif option == 4:
-            decode_email()
-        elif option == 5:
-            print(f"{Fore.LIGHTYELLOW_EX}[{MIDDLE_DOT}]{RESET} Exiting... Goodbye!")
-            break
-        else:
-            print(f"{RED}[!]{RESET} Invalid option. Please choose a valid option.")
-
-def send_email_option():
-    global encoded_message  # Use the global keyword to reference the outer variable
-
-    if encoded_message is None:
-        print(tabulate([[f"{RED}[!]{RESET} Encode a message first before sending an email."]], headers=['Options']))
-        return
-
-    sender_email = input(tabulate([[f"{Fore.LIGHTYELLOW_EX}[{MIDDLE_DOT}]{RESET} Enter sender's email"]], headers=['Options']))
-    sender_password = input(tabulate([[f"{Fore.LIGHTYELLOW_EX}[{MIDDLE_DOT}]{RESET} Enter sender's password"]], headers=['Options']))
-    receiver_email = input(tabulate([[f"{Fore.LIGHTYELLOW_EX}[{MIDDLE_DOT}]{RESET} Enter receiver's email"]], headers=['Options']))
-    subject = input(tabulate([[f"{Fore.LIGHTYELLOW_EX}[{MIDDLE_DOT}]{RESET} Enter email subject"]], headers=['Options']))
-    
-    # Read email body from an existing text file
-    body_file_path = input(tabulate([[f"{Fore.LIGHTYELLOW_EX}[{MIDDLE_DOT}]{RESET} Enter path to email body text file"]], headers=['Options']))
-    with open(body_file_path, 'r') as file:
-        body = file.read()
-
-    # Save the encoded message to a file
-    with open('encoded_message.txt', 'w') as encoded_file:
-        encoded_file.write(encoded_message)
-
-    # Send the email with the attached file
-    send_email(sender_email, sender_password, receiver_email, subject, body, attachment_path='encoded_message.txt')
-    print(tabulate([[f"{GREEN}[+]{RESET} Email sent with hidden message."]], headers=['Options']))
+        print(f"{RED}[!]{RESET} An error occurred: {e}")
 
 if __name__ == '__main__':
     print("")
     result = pyfiglet.figlet_format("E H I P S", font="alligator", width=100)
     print(f"{Fore.CYAN}{result}{RESET}")
     print("")
-    
     a = True
     while a:
-        command = input(tabulate([[f"{Fore.LIGHTYELLOW_EX}[{MIDDLE_DOT}]{RESET} Are you ready? (Yes/No): \n "]], headers=['Options']))
+        command = input(f"{YELLOW}[{MIDDLE_DOT}]{RESET} Are you ready? (Yes/No): ")
         cmd_splitted = command.split(' ', 1)
 
-        if cmd_splitted[0].lower() == "yes":
-            menu()
+        if cmd_splitted[0] == "Yes":
+            email_steganography()
         else:
             print(f"\n{Fore.LIGHTYELLOW_EX}╭─ Ready whenever you are! ──────────────────────────────────────────────╮")
             print(f"{Fore.LIGHTYELLOW_EX}│ {RESET}No rush! Feel free to run me again whenever you're ready.              {Fore.LIGHTYELLOW_EX}│")
