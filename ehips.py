@@ -49,12 +49,10 @@ def encode_text():
     print(f"{GREEN}[+]{RESET} Encoded message copied to clipboard. {GREEN}[+]{RESET}")
     print("Encoded Text: ", merge)
     pyperclip.copy(encoded)
-    return encoded, None,None
+    return encoded, merge
 
-def decode_text():
-    print(f"{YELLOW}[{MIDDLE_DOT}]{RESET} Enter message to decode: ", end="")
-    message = input()
-    extract_encoded_message = message.split(LEFT_TO_RIGHT_MARK)[1]
+def decode_text(encoded_message):
+    extract_encoded_message = encoded_message.split(LEFT_TO_RIGHT_MARK)[1]
     message = extract_encoded_message
     extract_encoded_message = message.split(RIGHT_TO_LEFT_MARK)[0]
     encoded = ''
@@ -74,7 +72,7 @@ def decode_text():
 
     return decoded
 
-def send_email(sender_email, sender_password, receiver_email, subject, body):
+def send_email(sender_email, sender_password, receiver_email, subject, body, attachment_path=None):
     msg = MIMEMultipart()
     msg['From'] = sender_email
     msg['To'] = receiver_email
@@ -82,23 +80,40 @@ def send_email(sender_email, sender_password, receiver_email, subject, body):
 
     msg.attach(MIMEText(body, 'plain'))
 
+    if attachment_path:
+        with open(attachment_path, 'r') as attachment:
+            attachment_content = MIMEText(attachment.read())
+            attachment_content.add_header('Content-Disposition', 'attachment', filename='encoded_message.txt')
+            msg.attach(attachment_content)
+
     server = smtplib.SMTP('smtp.gmail.com', 587)
     server.starttls()
     server.login(sender_email, sender_password)
     server.sendmail(sender_email, receiver_email, msg.as_string())
     server.quit()
 
+encoded_message = None
+
+
 def email_steganography():
+    global encoded_message  # Use the global keyword to reference the outer variable
+
     print("")
     print(f"{YELLOW}[{MIDDLE_DOT}]{RESET} Choose ZWC option (1 - Encode / 2 - Decode / 3 - Email): ", end="")
     option = int(input().lower())
     
     if option == 1:
-        encoded_message, _, _ = encode_text()
+        encoded_message, merge = encode_text()
     elif option == 2:
-        print(f"{GREEN}[+]{RESET} Decoded Message:  " + decode_text())
+        print(f"{YELLOW}[{MIDDLE_DOT}]{RESET} Enter message to decode: ", end="")
+        message = input()
+        print(f"{GREEN}[+]{RESET} Decoded Message:  " + decode_text(message))
         return
     elif option == 3:
+        if encoded_message is None:
+            print(f"{RED}[!]{RESET} Encode a message first before sending an email.")
+            return
+
         sender_email = input(f"{YELLOW}[{MIDDLE_DOT}]{RESET} Enter sender's email: ")
         sender_password = input(f"{YELLOW}[{MIDDLE_DOT}]{RESET} Enter sender's password: ")
         receiver_email = input(f"{YELLOW}[{MIDDLE_DOT}]{RESET} Enter receiver's email: ")
@@ -109,22 +124,36 @@ def email_steganography():
         with open(body_file_path, 'r') as file:
             body = file.read()
 
-        encoded_message, _, _ = encode_text()
+        # Save the encoded message to a file
+        with open('encoded_message.txt', 'w') as encoded_file:
+            encoded_file.write(encoded_message)
 
-        # Embed the encoded message in the email body
-        body += f"\n{encoded_message}"
-
-        # Send the email
-        send_email(sender_email, sender_password, receiver_email, subject, body)
+        # Send the email with the attached file
+        send_email(sender_email, sender_password, receiver_email, subject, body, attachment_path='encoded_message.txt')
         print(f"{GREEN}[+]{RESET} Email sent with hidden message. {GREEN}[+]{RESET}")
+    else:
+        print(f"{YELLOW}[{MIDDLE_DOT}]{RESET} Enter path to the email text file: ", end="")
+        email_file_path = input()
+        decode_email(email_file_path)
+
+def decode_email():
+    print(f"{YELLOW}[{MIDDLE_DOT}]{RESET} Enter filename containing encoded message: ", end="")
+    filename = input()
+
+    try:
+        with open(filename, 'r') as file:
+            encoded_message = file.read()
+            decoded_message = decode_text(encoded_message)
+            print(f"{GREEN}[+]{RESET} Decoded Message:  {decoded_message}")
+    except FileNotFoundError:
+        print(f"{RED}[!]{RESET} File not found: {filename}")
 
 if __name__ == '__main__':
-        
     print("")
-    result = pyfiglet.figlet_format("E H I P S", font = "alligator", width = 100)
+    result = pyfiglet.figlet_format("E H I P S", font="alligator", width=100)
     print(result) 
     print("")
-                            
+    
     while True:
         command = input("Are you ready? (Yes/No): ")
         cmd_splitted = command.split(' ', 1)
