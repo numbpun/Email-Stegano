@@ -34,13 +34,12 @@ zero_space_symbols = [
     ZERO_WIDTH_JOINER,
 ]
 
-def clear_screen():
-    # Clear the screen based on the platform
-    if platform.system() == 'Windows':
-        os.system('cls')
-    else:
-        os.system('clear')
-
+# def clear_screen():
+#     # Clear the screen based on the platform
+#     if platform.system() == 'Windows':
+#         os.system('cls')
+#     else:
+#         os.system('clear')
 
 def to_base(num, b, numerals='0123456789abcdefghijklmnopqrstuvwxyz'):
     return ((num == 0) and numerals[0]) or (to_base(num // b, b, numerals).lstrip(numerals[0]) +
