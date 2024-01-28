@@ -1,4 +1,4 @@
-# Email Hidden Information and Pictorial Steganography (EHIPS)
+# Email Hidden In Plain Sight (EHIPS)
 **"EHIPS: Concealing Secrets in Every Pixel, Unveiling a New Dimension of Email Communication!"**
 
 EHIPS provides a unique feature to send emails with hidden messages. Follow the on-screen instructions to encode a message, and then use the program to send an email with the hidden message attached.
