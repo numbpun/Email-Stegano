@@ -167,7 +167,6 @@ def decode_email():
 
 
 def display_menu():
-    clear_screen()
     print(tabulate([[f"{Fore.CYAN}[{MIDDLE_DOT}]{RESET} Choose ZWC option"],
                     [f"{Fore.LIGHTYELLOW_EX}1 - Encode"],
                     [f"{Fore.LIGHTYELLOW_EX}2 - Decode"],
