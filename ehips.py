@@ -87,7 +87,7 @@ def send_email(sender_email, sender_password, receiver_email, subject, body, att
     if attachment_path:
         with open(attachment_path, 'r') as attachment:
             attachment_content = MIMEText(attachment.read())
-            attachment_content.add_header('Content-Disposition', 'attachment', filename='encoded_message.txt')
+            attachment_content.add_header('Content-Disposition', 'attachment', filename='HoyaHaxa.txt')
             msg.attach(attachment_content)
 
     server = smtplib.SMTP('smtp.gmail.com', 587)
