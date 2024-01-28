@@ -1,0 +1,6 @@
+colorama==0.4.4
+pyperclip==1.8.2
+tabulate==0.8.9
+asciimatics==1.12.0
+Pillow==8.4.0
+pyfiglet==0.8.post1
