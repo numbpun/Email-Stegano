@@ -1,5 +1,7 @@
 # Email Hidden Information and Pictorial Steganography (EHIPS)
 
+![EHIPS Logo](logo.png)
+
 ## Table of Contents
 - [Introduction](#introduction)
 - [Features](#features)
